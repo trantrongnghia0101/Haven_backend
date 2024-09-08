@@ -13,7 +13,10 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        //
+        $categories = new Category();
+        return view('Category.home',[
+            'categories' => Category::all(),
+        ]);
     }
 
     /**
@@ -21,7 +24,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        //
+        return view('Category.store');
     }
 
     /**
@@ -29,7 +32,11 @@ class CategoryController extends Controller
      */
     public function store(StorecategoryRequest $request)
     {
-        //
+        $object = new Category();
+        // thêm dữ liệu vào từng cột tương ứng một cách nhanh chóng nhưng điều kiện tên input phải giống tên cột 
+        $object->fill($request->all());
+        $object->save();
+        return redirect()->route('Category.create');
     }
 
     /**
@@ -45,7 +52,9 @@ class CategoryController extends Controller
      */
     public function edit(category $category)
     {
-        //
+        return view('Category.edit', [
+            'category' => $category,
+        ]);
     }
 
     /**
@@ -53,7 +62,8 @@ class CategoryController extends Controller
      */
     public function update(UpdatecategoryRequest $request, category $category)
     {
-        //
+        $category->update($request->all());
+        return redirect()->route('Category.index');
     }
 
     /**
@@ -61,6 +71,7 @@ class CategoryController extends Controller
      */
     public function destroy(category $category)
     {
-        //
+        $category->delete();
+      return redirect()->back();
     }
 }

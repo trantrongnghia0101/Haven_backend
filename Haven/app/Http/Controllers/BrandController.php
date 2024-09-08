@@ -13,7 +13,10 @@ class BrandController extends Controller
      */
     public function index()
     {
-        //
+        $categories = new Brand();
+        return view('Brand.home',[
+            'Brands' => Brand::all(),
+        ]);
     }
 
     /**
@@ -21,7 +24,7 @@ class BrandController extends Controller
      */
     public function create()
     {
-        //
+        return view('Brand.store');
     }
 
     /**
@@ -29,7 +32,14 @@ class BrandController extends Controller
      */
     public function store(StoreBrandRequest $request)
     {
-        //
+        $object = new Brand();
+        $extension = $request->file('image')->getClientOriginalExtension();
+        $filename = time() . '.' . $extension; 
+        $object->fill($request->except('image'));
+        $object->image = $filename;
+        $object->save();
+        $request->file('image')->move('imgs', $filename);
+        return redirect()->route('Brand.create');
     }
 
     /**
@@ -45,7 +55,9 @@ class BrandController extends Controller
      */
     public function edit(Brand $brand)
     {
-        //
+        return view('Brand.edit', [
+            'brand' => $brand,
+        ]);
     }
 
     /**
@@ -53,7 +65,25 @@ class BrandController extends Controller
      */
     public function update(UpdateBrandRequest $request, Brand $brand)
     {
-        //
+        $input = $request->all();
+        if ($request->file('image') == null) {
+            unset($input['image']);
+        } else {
+            // xóa ảnh cũ
+            $file_path = public_path('imgs/' . $brand->image);
+            if (file_exists($file_path)) {
+                unlink($file_path); 
+            // return back()->with('success', 'Ảnh đã được xóa thành công!');
+            } 
+            // đổi tên file ảnh rồi mới thêm vào á đổi tên theo thời gian
+            $extension = $request->file('image')->getClientOriginalExtension();
+            $filename = time() . '.' . $extension; 
+            $input['image'] = $filename;
+            $request->file('image')->move('imgs',  $filename);
+        }
+        $brand->update($input);
+
+        return redirect()->back();
     }
 
     /**
@@ -61,6 +91,14 @@ class BrandController extends Controller
      */
     public function destroy(Brand $brand)
     {
-        //
+        // lấy đường dẫn file ảnh trong thư mục public rồi sau đó unlink là xóa file ảnh 
+        $file_path = public_path('imgs/' . $brand->image);
+        if (file_exists($file_path)) {
+            unlink($file_path); 
+            // return back()->with('success', 'Ảnh đã được xóa thành công!');
+        } 
+      
+        $brand->delete();
+        return redirect()->back();
     }
 }
