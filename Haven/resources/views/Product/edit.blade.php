@@ -46,7 +46,7 @@
             <div class="mb-3">
                 <label for="formFileMultiple" class="form-label">Image</label>
                 <input class="form-control" type="file" id="formFileMultiple" name="image" multiple>
-                <img src="{{ asset('imgs/'. $product->image) }}" style="width: 300px" height="300px" alt="">
+                <img src=" {{$product->image}}" style="width: 300px" height="300px" alt="">
             </div>
               
             {{-- <div class="mb-3">

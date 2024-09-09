@@ -19,7 +19,8 @@
                 <div class="mb-3">
                     <label for="formFileMultiple" class="form-label">Logo</label>
                     <input class="form-control" type="file" id="formFileMultiple" name="image" multiple>
-                    <img src="{{ asset('imgs/'. $brand->image) }}" style="width: 300px" height="300px" alt="">
+                    <img src="{{  $brand->image }}" style="width: 300px" height="300px" alt="">
+                    {{-- <img src="https://res.cloudinary.com/dkp2b25gf/image/upload/v1725873251/1725873248.jpeg.jpg" style="width: 300px" height="300px" alt=""> --}}
                 </div>
                 
             </div>

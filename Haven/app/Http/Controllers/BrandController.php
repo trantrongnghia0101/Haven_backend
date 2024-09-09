@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Http\Requests\StoreBrandRequest;
 use App\Http\Requests\UpdateBrandRequest;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class BrandController extends Controller
 {
@@ -35,10 +36,14 @@ class BrandController extends Controller
         $object = new Brand();
         $extension = $request->file('image')->getClientOriginalExtension();
         $filename = time() . '.' . $extension; 
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+            'public_id' => $filename
+        ])->getSecurePath();
+       
         $object->fill($request->except('image'));
-        $object->image = $filename;
+        $object->image = $uploadedFileUrl;
         $object->save();
-        $request->file('image')->move('imgs', $filename);
+        
         return redirect()->route('Brand.create');
     }
 
@@ -69,17 +74,24 @@ class BrandController extends Controller
         if ($request->file('image') == null) {
             unset($input['image']);
         } else {
-            // xóa ảnh cũ
-            $file_path = public_path('imgs/' . $brand->image);
-            if (file_exists($file_path)) {
-                unlink($file_path); 
-            // return back()->with('success', 'Ảnh đã được xóa thành công!');
-            } 
+            /// cập nhật ảnh thì xóa file ảnh cũ trên cloud
+            $parsedUrl = parse_url($brand->image, PHP_URL_PATH);
+                // Loại bỏ phần '/image/upload/' và các thư mục khác
+            $pathParts = explode('/', $parsedUrl);
+                // Lấy phần cuối cùng là public_id (bao gồm cả extension)
+            $fileWithExtension = end($pathParts);
+                // Loại bỏ phần extension (đuôi file .jpg, .png, ...)
+            $publicId = pathinfo($fileWithExtension, PATHINFO_FILENAME);
+            Cloudinary::destroy($publicId);
+
             // đổi tên file ảnh rồi mới thêm vào á đổi tên theo thời gian
             $extension = $request->file('image')->getClientOriginalExtension();
             $filename = time() . '.' . $extension; 
-            $input['image'] = $filename;
-            $request->file('image')->move('imgs',  $filename);
+            $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+                'public_id' => $filename
+            ])->getSecurePath();
+            $input['image'] = $uploadedFileUrl;
+            
         }
         $brand->update($input);
 
@@ -92,12 +104,15 @@ class BrandController extends Controller
     public function destroy(Brand $brand)
     {
         // lấy đường dẫn file ảnh trong thư mục public rồi sau đó unlink là xóa file ảnh 
-        $file_path = public_path('imgs/' . $brand->image);
-        if (file_exists($file_path)) {
-            unlink($file_path); 
-            // return back()->with('success', 'Ảnh đã được xóa thành công!');
-        } 
-      
+        $parsedUrl = parse_url($brand->image, PHP_URL_PATH);
+        // Loại bỏ phần '/image/upload/' và các thư mục khác
+        $pathParts = explode('/', $parsedUrl);
+        // Lấy phần cuối cùng là public_id (bao gồm cả extension)
+        $fileWithExtension = end($pathParts);
+        // Loại bỏ phần extension (đuôi file .jpg, .png, ...)
+        $publicId = pathinfo($fileWithExtension, PATHINFO_FILENAME);
+        Cloudinary::destroy($publicId);
+
         $brand->delete();
         return redirect()->back();
     }

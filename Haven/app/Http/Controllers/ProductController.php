@@ -7,6 +7,7 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Brand;
 use App\Models\category;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProductController extends Controller
 {
@@ -49,21 +50,16 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
-        //Lưu vào trong public//
-        // dd($request->all());
-        $object = new Product();
-
+        
+        $product = new Product();
         $extension = $request->file('image')->getClientOriginalExtension();
         $filename = time() . '.' . $extension; 
-        // $fileName = $request->file('image')->getClientOriginalName();
-        $object->fill($request->except('image'));
-        $object->image = $filename;
-        $object->save();
-        $request->file('image')->move('imgs', $filename);
-
-        // lưu trong storage//
-        // $path =  $request->file('image')->store('/imgs');
-       
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+            'public_id' => $filename
+        ])->getSecurePath();
+        $product->fill($request->except('image'));
+        $product->image = $uploadedFileUrl;
+        $product->save();
         return redirect()->route('Product.index');
     }
 
@@ -98,16 +94,23 @@ class ProductController extends Controller
         if ($request->file('image') == null) {
             unset($input['image']);
         } else {
-            $file_path = public_path('imgs/' . $product->image);
-            if (file_exists($file_path)) {
-                unlink($file_path); 
-            // return back()->with('success', 'Ảnh đã được xóa thành công!');
-            } 
-            $extension = $request->file('image')->getClientOriginalExtension();
-            $filename = time() . '.' . $extension; 
-            $input['image']= $filename;
+            $parsedUrl = parse_url($product->image, PHP_URL_PATH);
+            // Loại bỏ phần '/image/upload/' và các thư mục khác
+        $pathParts = explode('/', $parsedUrl);
+            // Lấy phần cuối cùng là public_id (bao gồm cả extension)
+        $fileWithExtension = end($pathParts);
+            // Loại bỏ phần extension (đuôi file .jpg, .png, ...)
+        $publicId = pathinfo($fileWithExtension, PATHINFO_FILENAME);
+        Cloudinary::destroy($publicId);
 
-            $request->file('image')->move('imgs',  $filename);
+        // đổi tên file ảnh rồi mới thêm vào á đổi tên theo thời gian
+        $extension = $request->file('image')->getClientOriginalExtension();
+        $filename = time() . '.' . $extension; 
+        $uploadedFileUrl = Cloudinary::upload($request->file('image')->getRealPath(), [
+            'public_id' => $filename
+        ])->getSecurePath();
+
+        $input['image'] = $uploadedFileUrl;
         }
         $product->update($input);
 
@@ -119,11 +122,15 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $file_path = public_path('imgs/' . $product->image);
-        if (file_exists($file_path)) {
-            unlink($file_path); 
-            // return back()->with('success', 'Ảnh đã được xóa thành công!');
-        } 
+        $parsedUrl = parse_url($product->image, PHP_URL_PATH);
+        // Loại bỏ phần '/image/upload/' và các thư mục khác
+        $pathParts = explode('/', $parsedUrl);
+        // Lấy phần cuối cùng là public_id (bao gồm cả extension)
+        $fileWithExtension = end($pathParts);
+        // Loại bỏ phần extension (đuôi file .jpg, .png, ...)
+        $publicId = pathinfo($fileWithExtension, PATHINFO_FILENAME);
+        Cloudinary::destroy($publicId);
+
         $product->delete();
         return redirect()->back();
     }
